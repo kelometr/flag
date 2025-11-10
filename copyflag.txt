@@ -1,4 +1,3 @@
--- LocalScript (вставить в StarterPlayerScripts)
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 local RunService = game:GetService("RunService")
