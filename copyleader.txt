@@ -1,0 +1,101 @@
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local RunService = game:GetService("RunService")
+
+local highlight = Instance.new("Highlight")
+highlight.FillColor = Color3.fromRGB(0, 100, 255)
+highlight.OutlineColor = Color3.fromRGB(100, 180, 255)
+highlight.FillTransparency = 0.5
+highlight.OutlineTransparency = 0
+highlight.Enabled = false
+highlight.Parent = workspace
+
+local currentTarget = nil
+local disabled = false
+
+local renderConn
+local clickConn
+
+local function copyToClipboard(text)
+	if setclipboard then
+		setclipboard(text)
+	elseif syn and syn.write_clipboard then
+		syn.write_clipboard(text)
+	elseif Clipboard and Clipboard.set then
+		Clipboard.set(text)
+	else
+		warn("Clipboard function not supported in this environment.")
+	end
+end
+
+local function getPlayerFromMouse()
+	local target = mouse.Target
+	if not target then return nil end
+	local model = target:FindFirstAncestorOfClass("Model")
+	if not model then return nil end
+	local targetPlayer = game.Players:GetPlayerFromCharacter(model)
+	if targetPlayer and targetPlayer ~= player then
+		return model
+	end
+	return nil
+end
+
+local function disableScript()
+	if disabled then return end
+	disabled = true
+	highlight.Enabled = false
+	if highlight.Parent then
+		highlight:Destroy()
+	end
+	if renderConn then
+		renderConn:Disconnect()
+		renderConn = nil
+	end
+	if clickConn then
+		clickConn:Disconnect()
+		clickConn = nil
+	end
+	print("script done")
+end
+
+renderConn = RunService.RenderStepped:Connect(function()
+	if disabled then return end
+	local targetCharacter = getPlayerFromMouse()
+	if targetCharacter then
+		if currentTarget ~= targetCharacter then
+			currentTarget = targetCharacter
+			highlight.Adornee = targetCharacter
+			highlight.Enabled = true
+		end
+	else
+		currentTarget = nil
+		highlight.Enabled = false
+	end
+end)
+
+clickConn = mouse.Button1Down:Connect(function()
+	if disabled then return end
+	if not currentTarget then return end
+
+	local head = currentTarget:FindFirstChild("Head")
+	if not head then return end
+	local billboard = head:FindFirstChild("BillboardGui2") -- BillboardGui2
+	if not billboard then
+		warn("BillboardGui2 не найден в голове игрока.")
+		return
+	end
+	local imageLabel = billboard:FindFirstChild("ImageLabel")
+	if not imageLabel then
+		warn("ImageLabel не найден в BillboardGui2.")
+		return
+	end
+
+	local imageId = imageLabel.Image
+	if imageId and imageId ~= "" then
+		copyToClipboard(imageId)
+		print("✅ leader copied: ", imageId)
+		disableScript()
+	else
+		warn("image does not exists")
+	end
+end)
